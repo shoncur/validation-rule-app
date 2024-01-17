@@ -19,7 +19,10 @@ def process_document_update(change_data):
     print('--Document Update has been called--')
     file_url = f'{BASE_URL}/changes/{co_guid}/files'
     file_response = requests.get(file_url, headers=co_headers).json()
-    print(file_response)
+    print(json.dumps(file_response, indent=2))
+
+    # Search through all the files for category
+    
 
 def process_lifecycle_update(change_data):
     # Check that lifecycle has been updated
@@ -50,8 +53,8 @@ password = config.get('password')
 login_fail = True
 while login_fail:
     try:
-        # email = input('Enter email: ')
-        # password = getpass.getpass('Enter password: ')
+        email = input('Enter email: ')
+        password = getpass.getpass('Enter password: ')
         data = {
             'email':f'{email}',
             'password':f'{password}'
