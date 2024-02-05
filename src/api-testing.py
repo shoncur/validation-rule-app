@@ -26,25 +26,15 @@ def process_initial_release(change_data):
     items_response = requests.get(items_url, headers=co_headers).json()
     #print(json.dumps(items_response, indent=2))
 
-    # Check which items have no initial 'Phase'
-    #   Check the items_response for 'affectedItemRevision', if it is set to null, then there must not have been a release before the current one in the CO
-    # Loop through all items, grab the guid, and check their current Lifecycle Phase in items world
-    # item_guids = [item_guid['guid'] for item_guid in items_response['results']]
-    # print(item_guids)
-    # for item_guid in item_guids:
-    #     item_url = f'{BASE_URL}/items/{item_guid}'
-    #     item_response = requests.get(item_url, headers=co_headers).json()
-    #     print(json.dumps(item_response, indent=2))
-
-    initial_release_names = []
-    not_initial_release_names = []
+    initial_release_numbers = []
+    not_initial_release_numbers = []
     initial_release_checklist = []
 
     results_list = items_response.get('results', [])
     for result in results_list:
         affected_item_revision = result.get('affectedItemRevision')
         if affected_item_revision is None:
-            initial_release_names.append(result.get('newItemRevision')['name'])
+            initial_release_numbers.append(result.get('newItemRevision')['number'])
             specs = result.get('specsView')['includedInThisChange']
             bom = result.get('bomView')['includedInThisChange']
             sourcing = result.get('sourcingView')['includedInThisChange']
@@ -52,39 +42,39 @@ def process_initial_release(change_data):
             item_stats = [specs, bom, sourcing, files]
             initial_release_checklist.append(item_stats)
         else:
-            not_initial_release_names.append(result.get('newItemRevision')['name'])
+            not_initial_release_numbers.append(result.get('newItemRevision')['number'])
     print('\033[33mItems that are believed to be initial release: \033[0m')
-    for item in initial_release_names:
+    for item in initial_release_numbers:
         print(f'\t- {item}')
     print('\033[33mItems that are NOT believed to be initial release: \033[0m')
-    for item in not_initial_release_names:
+    for item in not_initial_release_numbers:
         print(f'\t- {item}')
 
     print('\n\033[33mInitial Release Checklist:\033[0m')
 
     for i, item in enumerate(initial_release_checklist):
-        item_name = initial_release_names[i]
-        print(f'{item_name}:')
+        item_number = initial_release_numbers[i]
+        print(f'\t- {item_number}:')
 
         if item[0] == True:
-            print('\tSpecs: \033[32m\u2713\033[0m')
+            print('\t\tSpecs: \033[32m\u2713\033[0m')
         else:
-            print('\tSpecs: \033[31m\u2717\033[0m')
+            print('\t\tSpecs: \033[31m\u2717\033[0m')
 
         if item[1] == True:
-            print('\tBOM: \033[32m\u2713\033[0m')
+            print('\t\tBOM: \033[32m\u2713\033[0m')
         else:
-            print('\tBOM: \033[31m\u2717\033[0m')
+            print('\t\tBOM: \033[31m\u2717\033[0m')
 
         if item[2] == True:
-            print('\tSourcing: \033[32m\u2713\033[0m')
+            print('\t\tSourcing: \033[32m\u2713\033[0m')
         else:
-            print('\tSourcing: \033[31m\u2717\033[0m')
+            print('\t\tSourcing: \033[31m\u2717\033[0m')
             
         if item[3] == True:
-            print('\tFiles: \033[32m\u2713\033[0m')
+            print('\t\tFiles: \033[32m\u2713\033[0m')
         else:
-            print('\tFiles: \033[31m\u2717\033[0m')
+            print('\t\tFiles: \033[31m\u2717\033[0m')
 
 def process_document_update(change_data):
     print('\n\033[34m--Document Update has been called--\033[0m')
@@ -108,14 +98,40 @@ def process_document_update(change_data):
         print('\033[32m**This CO has redlines included**\033[0m')
     else:
         print('\033[31m**This CO is missing redlines**\033[0m')
-    print('All categories used in this CO: ')
+    print('All file categories used in this CO: ')
     for category in cat_names:
-        print(f'\t{category}')
+        print(f'\t- {category}')
 
 def process_lifecycle_update(change_data):
     print('\n\033[34m--Lifecycle Update has been called--\033[0m')
     # Check that lifecycle has been updated
 
+    items_url = f'{co_url}/items'
+    items_response = requests.get(items_url, headers=co_headers).json()
+    #print(json.dumps(items_response, indent=2))
+
+    lifecycle_update_numbers = []
+    not_lifecycle_update_numbers = []
+    list_of_phases = []
+
+    results_list = items_response.get('results', [])
+    for result in results_list:
+        affected_item_revision = result.get('affectedItemRevision')
+        if affected_item_revision is None:
+            not_lifecycle_update_numbers.append(result.get('newItemRevision')['number'])
+        else:
+            lifecycle_update_numbers.append(result.get('newItemRevision')['number'])
+            # Get the old lifecycle phase
+
+            # Get the new lifecycle phase
+            new_phase = result.get('newLifecyclePhase')['name']
+            list_of_phases.append(new_phase)
+    
+    print('\033[33mItems undergoing lifecycle update (not initial release): \033[0m')
+    for i, item in enumerate(lifecycle_update_numbers):
+        print(f'\t- {item}')
+        print('\t\tPrevious Lifecycle Phase: ')
+        print(f'\t\tNew Lifecycle Phase: \033[36m{list_of_phases[i]}\033[0m')
 
 def dispatch_process(type_of_change_value, change_data):
     if type_of_change_value == "Initial Release":
@@ -142,8 +158,8 @@ password = config.get('password')
 login_fail = True
 while login_fail:
     try:
-        email = input('Enter email: ')
-        password = getpass.getpass('Enter password: ')
+        #email = input('Enter email: ')
+        #password = getpass.getpass('Enter password: ')
         data = {
             'email':f'{email}',
             'password':f'{password}'
@@ -164,7 +180,7 @@ while not valid_co:
     try:
         # Searching through Arena to find the specific CO that the user has inputted
         print('\nEnter the 6 digits of the CO you would like to test: ', end='')
-        co = 'CO-' + input('CO-')
+        co = 'CO-' + input('\033[35mCO-')
         co_url = f'{BASE_URL}/changes?number={co}'
         co_headers = {'arena_session_id':f'{arena_session_id}', 'Content-Type':'application/json'}
         co_response = requests.get(co_url, headers=co_headers).json()
@@ -190,7 +206,7 @@ while not valid_co:
             for type in type_of_change_value:
                 dispatch_process(type, data)
         else:
-            print("Type of Change not found.")
+            print("\033[31mType of Change not found.\033[0m")
 
         print()
         valid_co = True
