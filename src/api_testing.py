@@ -15,12 +15,6 @@ def process_initial_release(change_data):
     # Under 'Items Tab Modifications' the Specs, BOM, Source, Cost, and Files should be checked
     # 'Item View' in documentation
 
-    specs_included = False
-    bom_included = False
-    source_included = False
-    cost_included = False
-    files_included = False
-
     # Get all items in Change
     items_url = f'{co_url}/items'
     items_response = requests.get(items_url, headers=co_headers).json()
