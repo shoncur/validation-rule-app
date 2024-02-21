@@ -24,6 +24,7 @@ def process_initial_release(change_data):
     not_initial_release_numbers = []
     initial_release_checklist = []
 
+    # We need to go to the specific item and check if there is sourcing
     # This needs to change because the check mark is not indicative of there actually being content (ie. specs)
 
     results_list = items_response.get('results', [])
