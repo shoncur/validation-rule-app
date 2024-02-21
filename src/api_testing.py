@@ -24,6 +24,8 @@ def process_initial_release(change_data):
     not_initial_release_numbers = []
     initial_release_checklist = []
 
+    # This needs to change because the check mark is not indicative of there actually being content (ie. specs)
+
     results_list = items_response.get('results', [])
     for result in results_list:
         affected_item_revision = result.get('affectedItemRevision')
