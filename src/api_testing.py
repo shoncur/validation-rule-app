@@ -31,13 +31,52 @@ def process_initial_release(change_data):
     for result in results_list:
         affected_item_revision = result.get('affectedItemRevision')
         if affected_item_revision is None:
-            initial_release_numbers.append(result.get('newItemRevision')['number'])
-            specs = result.get('specsView')['includedInThisChange']
-            bom = result.get('bomView')['includedInThisChange']
-            sourcing = result.get('sourcingView')['includedInThisChange']
-            files = result.get('filesView')['includedInThisChange']
-            item_stats = [specs, bom, sourcing, files]
-            initial_release_checklist.append(item_stats)
+            item_guid = result.get('newItemRevision')['guid']
+            item_number = result.get('newItemRevision')['number']
+            initial_release_numbers.append(item_number)
+
+            # put into a try catch
+            # search the number in items world
+            # NOTE: THAT ALL 'DOCUMENT' TYPES WILL NOT REQUIRE SOURCING
+            item_url = f'{BASE_URL}/items/{item_guid}/sourcing'
+            item_response = requests.get(item_url, headers=co_headers).json()
+            print(json.dumps(item_response, indent=2))
+            sourcing_count = item_response.get('count')
+            if sourcing_count == 0:
+                # We need to check if it is a document type or not
+                # Document type does not need sourcing, other types do not
+                
+                # Check the prefixes file and see if this item is a document or not
+                with open('document_prefixes.txt', 'r') as file:
+                    prefixes = [line.strip() for line in file]
+
+                is_document = False
+                sourcing = False
+
+                for prefix in prefixes:
+                    if item_number.startswith(prefix):
+                        is_document = True
+                        break # No need to check the rest of the prefixes if it turns out it's a document
+
+                if is_document:
+                    sourcing = True
+                    print('This is a document, it does not require sourcing')
+                else:
+                    sourcing = False
+
+            else:
+                print('This has sourcing')
+                sourcing = True
+                # Maybe we want to fetch the information for the sourcing?
+                        
+            #---
+
+            # specs = result.get('specsView')['includedInThisChange']
+            # bom = result.get('bomView')['includedInThisChange']
+            # sourcing = result.get('sourcingView')['includedInThisChange']
+            # files = result.get('filesView')['includedInThisChange']
+            # item_stats = [specs, bom, sourcing, files]
+            # initial_release_checklist.append(item_stats)
         else:
             not_initial_release_numbers.append(result.get('newItemRevision')['number'])
     print('\033[33mItems that are believed to be initial release: \033[0m')
@@ -49,29 +88,29 @@ def process_initial_release(change_data):
 
     print('\n\033[33mInitial Release Checklist:\033[0m')
 
-    for i, item in enumerate(initial_release_checklist):
-        item_number = initial_release_numbers[i]
-        print(f'\t- {item_number}:')
+    # for i, item in enumerate(initial_release_checklist):
+    #     item_number = initial_release_numbers[i]
+    #     print(f'\t- {item_number}:')
 
-        if item[0] == True:
-            print('\t\tSpecs: \033[32m\u2713\033[0m')
-        else:
-            print('\t\tSpecs: \033[31m\u2717\033[0m')
+    #     if item[0] == True:
+    #         print('\t\tSpecs: \033[32m\u2713\033[0m')
+    #     else:
+    #         print('\t\tSpecs: \033[31m\u2717\033[0m')
 
-        if item[1] == True:
-            print('\t\tBOM: \033[32m\u2713\033[0m')
-        else:
-            print('\t\tBOM: \033[31m\u2717\033[0m')
+    #     if item[1] == True:
+    #         print('\t\tBOM: \033[32m\u2713\033[0m')
+    #     else:
+    #         print('\t\tBOM: \033[31m\u2717\033[0m')
 
-        if item[2] == True:
-            print('\t\tSourcing: \033[32m\u2713\033[0m')
-        else:
-            print('\t\tSourcing: \033[31m\u2717\033[0m')
+    #     if item[2] == True:
+    #         print('\t\tSourcing: \033[32m\u2713\033[0m')
+    #     else:
+    #         print('\t\tSourcing: \033[31m\u2717\033[0m')
             
-        if item[3] == True:
-            print('\t\tFiles: \033[32m\u2713\033[0m')
-        else:
-            print('\t\tFiles: \033[31m\u2717\033[0m')
+    #     if item[3] == True:
+    #         print('\t\tFiles: \033[32m\u2713\033[0m')
+    #     else:
+    #         print('\t\tFiles: \033[31m\u2717\033[0m')
 
 def process_document_update(change_data):
     print('\n\033[34m--Document Update has been called--\033[0m')
