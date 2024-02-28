@@ -10,10 +10,11 @@ login_headers = {'Content-Type':'application/json'}
 
 def process_initial_release(change_data):
     print('\n\033[34m--Initial Release has been called--\033[0m')
-    # Check that each Initial Release item has Files attached
-    # Under 'Items Tab Modifications' the 'Item New Phase' should only have the new revision
-    # Under 'Items Tab Modifications' the Specs, BOM, Source, Cost, and Files should be checked
-    # 'Item View' in documentation
+    # Documents go from unreleased -> production release      CHECK
+    # Always goes to rev A                                    CHECK
+    # Everything has checkmarks                               CHECK
+    # pdf is the primary file (needs primary file)
+    # if RETRAINED then quiz needs to be in implementation
 
     # Get all items in Change
     items_url = f'{co_url}/items'
@@ -21,6 +22,8 @@ def process_initial_release(change_data):
     #print(json.dumps(items_response, indent=2))
 
     initial_release_numbers = []
+    initial_release_sourcing = []
+    is_document_list = []
     not_initial_release_numbers = []
     initial_release_checklist = []
 
@@ -33,15 +36,21 @@ def process_initial_release(change_data):
         if affected_item_revision is None:
             item_guid = result.get('newItemRevision')['guid']
             item_number = result.get('newItemRevision')['number']
+            lifecycle_phase = result.get('newLifecyclePhase')['name']
+            revision = result.get('newRevisionNumber')
             initial_release_numbers.append(item_number)
 
-            # put into a try catch
+            # FOR SOURCING----------------------------------------------------
             # search the number in items world
             # NOTE: THAT ALL 'DOCUMENT' TYPES WILL NOT REQUIRE SOURCING
             item_url = f'{BASE_URL}/items/{item_guid}/sourcing'
             item_response = requests.get(item_url, headers=co_headers).json()
-            print(json.dumps(item_response, indent=2))
+            #print(json.dumps(item_response, indent=2))
             sourcing_count = item_response.get('count')
+
+            is_document = False
+            sourcing = False
+
             if sourcing_count == 0:
                 # We need to check if it is a document type or not
                 # Document type does not need sourcing, other types do not
@@ -50,67 +59,121 @@ def process_initial_release(change_data):
                 with open('document_prefixes.txt', 'r') as file:
                     prefixes = [line.strip() for line in file]
 
-                is_document = False
-                sourcing = False
-
                 for prefix in prefixes:
                     if item_number.startswith(prefix):
                         is_document = True
+                        is_document_list.append(is_document)
+                        # If it's a document, we need to make sure that it's going straight to production release
                         break # No need to check the rest of the prefixes if it turns out it's a document
 
                 if is_document:
                     sourcing = True
-                    print('This is a document, it does not require sourcing')
+                    initial_release_sourcing.append(sourcing)
+                    if lifecycle_phase != 'Production Release':
+                            print('\033[91mInitial release documents must ALWAYS go straight to Production Release\033[0m')
                 else:
                     sourcing = False
+                    initial_release_sourcing.append(sourcing)
+                    is_document_list.append(is_document)
 
             else:
-                print('This has sourcing')
                 sourcing = True
+                initial_release_sourcing.append(sourcing)
+                is_document_list.append(is_document) # This is only here to ensure that the is_document_list and the other lists line up, if sourcing is there, it does not matter if it is a document or not
                 # Maybe we want to fetch the information for the sourcing?
                         
-            #---
+            #----------------------------------------------------------------
+            #-----------REVISION----------
+            if revision != 'A':
+                print('\033[91mAll initial release items must be Rev A\033[0m')
+            #-----------------------------
+            # Everything must be checkmarked-----------------------------------
+            specs_check = result.get('specsView')['includedInThisChange']
+            bom_check = result.get('bomView')['includedInThisChange']
+            sourcing_check = result.get('sourcingView')['includedInThisChange']
+            files_check = result.get('filesView')['includedInThisChange']
+            item_check_stats = [specs_check, bom_check, sourcing_check, files_check]
+            initial_release_checklist.append(item_check_stats)
+            #--------------------------------------------------------------
+            #PDF must be the primary file----------------------
+            item_url = f'{BASE_URL}/items/{item_guid}/files'
+            item_response = requests.get(item_url, headers=co_headers).json()
+            #print(json.dumps(item_response, indent=2))
 
-            # specs = result.get('specsView')['includedInThisChange']
-            # bom = result.get('bomView')['includedInThisChange']
-            # sourcing = result.get('sourcingView')['includedInThisChange']
-            # files = result.get('filesView')['includedInThisChange']
-            # item_stats = [specs, bom, sourcing, files]
-            # initial_release_checklist.append(item_stats)
+            item_files_count = item_response.get('count')
+            if item_files_count == 0:
+                print(f'\033[91mThere are no files associated with {item_number}\033[0m')
+            else:
+                # We need to make sure that there is a primary file
+                files_list = item_response.get('results', [])
+                has_primary = False
+                for file in files_list:
+                    primary_status = file.get('primary')
+                    file_name = file.get('file')['name']
+                    if primary_status:
+                        print(f'The primary file is {file_name}')
+                        has_primary = True
+                        # Check if it is a pdf
+                        format_type = file.get('file')['format']
+                        if format_type == 'pdf':
+                            print('\033[92mPrimary file is a pdf\033[0m')
+                        else:
+                            print('\033[91mPrimary file should be a pdf (with some exceptions)\033[0m')
+                if has_primary == False:
+                    print('\033[91mThere is no primary file\033[0m')
+                    
+            #-------------------------------------------------
         else:
             not_initial_release_numbers.append(result.get('newItemRevision')['number'])
+
     print('\033[33mItems that are believed to be initial release: \033[0m')
-    for item in initial_release_numbers:
+    for i, item in enumerate(initial_release_numbers):
+        sourcing = initial_release_sourcing[i]
+        is_document = is_document_list[i]
+
         print(f'\t- {item}')
+        print(f'\t\tSourcing status:')
+
+        if is_document and sourcing:
+            print(f'\t\t\t\033[92mSourcing included\033[0m')
+        if is_document and not sourcing:
+            print(f'\t\t\t\033[92mThis item is a document, sourcing is not required\033[0m')
+        if not is_document and sourcing:
+            print(f'\t\t\t\033[92mSourcing included\033[0m')
+        if not is_document and not sourcing:
+            print(f'\t\t\t\033[91mThis item is missing sourcing\033[0m')
+
+        print(f'\t\tFile Status:')
+
     print('\033[33mItems that are NOT believed to be initial release: \033[0m')
     for item in not_initial_release_numbers:
         print(f'\t- {item}')
 
-    print('\n\033[33mInitial Release Checklist:\033[0m')
+    print('\n\033[33mModifications Checklist:\033[0m')
 
-    # for i, item in enumerate(initial_release_checklist):
-    #     item_number = initial_release_numbers[i]
-    #     print(f'\t- {item_number}:')
+    for i, item in enumerate(initial_release_checklist):
+        item_number = initial_release_numbers[i]
+        print(f'\t- {item_number}:')
 
-    #     if item[0] == True:
-    #         print('\t\tSpecs: \033[32m\u2713\033[0m')
-    #     else:
-    #         print('\t\tSpecs: \033[31m\u2717\033[0m')
+        if item[0] == True:
+            print('\t\tSpecs: \033[32m\u2713\033[0m')
+        else:
+            print('\t\tSpecs: \033[31m\u2717\033[0m')
 
-    #     if item[1] == True:
-    #         print('\t\tBOM: \033[32m\u2713\033[0m')
-    #     else:
-    #         print('\t\tBOM: \033[31m\u2717\033[0m')
+        if item[1] == True:
+            print('\t\tBOM: \033[32m\u2713\033[0m')
+        else:
+            print('\t\tBOM: \033[31m\u2717\033[0m')
 
-    #     if item[2] == True:
-    #         print('\t\tSourcing: \033[32m\u2713\033[0m')
-    #     else:
-    #         print('\t\tSourcing: \033[31m\u2717\033[0m')
+        if item[2] == True:
+            print('\t\tSourcing: \033[32m\u2713\033[0m')
+        else:
+            print('\t\tSourcing: \033[31m\u2717\033[0m')
             
-    #     if item[3] == True:
-    #         print('\t\tFiles: \033[32m\u2713\033[0m')
-    #     else:
-    #         print('\t\tFiles: \033[31m\u2717\033[0m')
+        if item[3] == True:
+            print('\t\tFiles: \033[32m\u2713\033[0m')
+        else:
+            print('\t\tFiles: \033[31m\u2717\033[0m')
 
 def process_document_update(change_data):
     print('\n\033[34m--Document Update has been called--\033[0m')
