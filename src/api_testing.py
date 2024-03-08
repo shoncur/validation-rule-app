@@ -8,7 +8,7 @@ import os
 url = f'{BASE_URL}/login'
 login_headers = {'Content-Type':'application/json'}
 
-def process_initial_release(change_data):
+def process_initial_release():
     print('\n\033[34m--Initial Release has been called--\033[0m')
     # Documents go from unreleased -> production release      CHECK
     # Always goes to rev A                                    CHECK
@@ -195,7 +195,7 @@ def process_initial_release(change_data):
         else:
             print('\t\tFiles: \033[31m\u2717\033[0m')
 
-def process_document_update(change_data):
+def process_document_update():
     print('\n\033[34m--Document Update has been called--\033[0m')
 
     # Check that there are redlines included in the files
@@ -221,7 +221,7 @@ def process_document_update(change_data):
     for category in cat_names:
         print(f'\t- {category}')
 
-def process_lifecycle_update(change_data):
+def process_lifecycle_update():
     print('\n\033[34m--Lifecycle Update has been called--\033[0m')
     # Check that lifecycle has been updated
 
@@ -252,13 +252,13 @@ def process_lifecycle_update(change_data):
         print('\t\tPrevious Lifecycle Phase: ')
         print(f'\t\tNew Lifecycle Phase: \033[36m{list_of_phases[i]}\033[0m')
 
-def dispatch_process(type_of_change_value, change_data):
+def dispatch_process(type_of_change_value):
     if type_of_change_value == "Initial Release":
-        process_initial_release(change_data)
+        process_initial_release()
     elif type_of_change_value == "Document Update":
-        process_document_update(change_data)
+        process_document_update()
     elif type_of_change_value == "Lifecycle Update":
-        process_lifecycle_update(change_data)
+        process_lifecycle_update()
     # Add more conditions as needed
     else:
         print("\n--Unsupported type of change:", type_of_change_value + '--')
@@ -323,7 +323,7 @@ while not valid_co:
         # Perform the dispatch
         if type_of_change_value:
             for type in type_of_change_value:
-                dispatch_process(type, data)
+                dispatch_process(type)
         else:
             print("\033[31mType of Change not found.\033[0m")
 
