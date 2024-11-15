@@ -368,7 +368,7 @@ class COApp(QWidget):
     def dispatch_process(self, type_of_change_value, co_url, co_guid, co_headers):
         if type_of_change_value == "Initial Release":
             self.process_initial_release(co_url, co_headers)
-        elif type_of_change_value == "Document/File Update":
+        elif type_of_change_value == "Document/File Update" or "Document Update":
             print('doc up')
             self.process_document_update(co_guid, co_headers)
         elif type_of_change_value == "Lifecycle Update":
