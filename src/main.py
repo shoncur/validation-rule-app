@@ -1,6 +1,7 @@
 import os
 import sys
 import requests
+import json
 from PyQt5.QtWidgets import QCheckBox, QApplication, QDialog, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QHBoxLayout, QTabWidget, QTextEdit
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
@@ -132,6 +133,7 @@ class COApp(QWidget):
             # Get all items in Change
             items_url = f'{co_url}/items'
             items_response = requests.get(items_url, headers=co_headers).json()
+            print(json.dumps(items_response, indent=2))
 
             initial_release_numbers = []
             initial_release_sourcing = []
@@ -366,7 +368,7 @@ class COApp(QWidget):
     def dispatch_process(self, type_of_change_value, co_url, co_guid, co_headers):
         if type_of_change_value == "Initial Release":
             self.process_initial_release(co_url, co_headers)
-        elif type_of_change_value == "Document Update":
+        elif type_of_change_value == "Document/File Update":
             print('doc up')
             self.process_document_update(co_guid, co_headers)
         elif type_of_change_value == "Lifecycle Update":
