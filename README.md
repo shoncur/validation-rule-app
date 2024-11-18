@@ -25,6 +25,7 @@ Here is the general process that the application undergoes:
       - PDF is the primary file (needs a primary file)
       - If RETRAINED then quiz needs to be in implementation
     - Document Update
-      - ...
+      - Check the categories ensure that redlines are included in the files
     - Lifecycle Update
-      - ...
+      - Ensure that old lifecycle phase existed so the item is not in initial release
+      - Check that new lifecycle phase is different from old lifecycle phase
