@@ -20,12 +20,37 @@ Here is the general process that the application undergoes:
         - Search the number in items world
         - Check if it is a document or not (use the document_prefixes.txt file to check prefixes)
       - Documents go from unreleased to production release
+      > Note from Trish: UoM "DOC or N/A" is indicated
       - Always goes to rev A
       - Everything has checkmarks (does this need to change? Checkmarks are not accurate for initial release)
+      > Any attributes that has a yellow dot requires a check box and will always include the files attribute
       - PDF is the primary file (needs a primary file)
       - If RETRAINED then quiz needs to be in implementation
-    - Document Update
+      > Sometimes they do not attach them in the correct place. So if this could be "..found in to the impl. or files of the CO." make sure it is on the most current template (DOT)
+    - Document/File Update
+      > Needs an Impact Assessment <br>
+      > Make sure that it is not "In Production" but yet "Production Release" <br>
+      > UoM "DOC or N/A" is indicated
+      > Revises to the next Rev
+      - Everything has checkmarks (does this need to change? Checkmarks are not accurate for initial release)
+      > Any attributes that has a yellow dot requires a check box and will always include the files attribute
       - Check the categories ensure that redlines are included in the files
+      > Make sure it is on the most current template (DOT)
+      - If RETRAINED then quiz needs to be in implementation
+      > Sometimes they do not attach them in the correct place. So if this could be "..found in to the impl. or files of the CO." make sure it is on the most current template (DOT)
+    - Part Update
+      - ...
+    - BOM Update
+      - ...
+    - Supplier Update
+      - ...
     - Lifecycle Update
       - Ensure that old lifecycle phase existed so the item is not in initial release
       - Check that new lifecycle phase is different from old lifecycle phase
+      > Lifecycle phase will stay the same if revising. Something that is in Production Release will stay in the same lifecycle phase unless it is INA or OBS
+      > Should never be in "In Production" lifecycle phase
+
+Notes on acronyms:
+UoM = Unit of Measure
+INA = Inactive
+OBS = Obselete
