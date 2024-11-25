@@ -1,6 +1,9 @@
 # validation-rule-app
 This application will be able to verify that all bases are covered when uploading a CO to Arena.
 
+> Reminder that we are trying to do all DOCUMENT change orders, not PART change orders
+> Does CMDC have a WRK for change orders?
+
 ## How does this app work?
 Here is the general process that the application undergoes:
 
