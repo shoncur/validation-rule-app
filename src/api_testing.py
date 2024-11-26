@@ -49,6 +49,10 @@ def process_initial_release():
 
             revisions.append(revision)
 
+            # To get the UoM
+            # Item guid
+            #item_attribute_url = 
+
             # FOR SOURCING----------------------------------------------------
             # search the number in items world
             # NOTE: THAT ALL 'DOCUMENT' TYPES WILL NOT REQUIRE SOURCING
@@ -79,7 +83,9 @@ def process_initial_release():
                     sourcing = True
                     initial_release_sourcing.append(sourcing)
                     if lifecycle_phase != 'Production Release':
-                            print('\033[91mInitial release documents must ALWAYS go straight to Production Release\033[0m')
+                        print('\033[91mInitial release documents must ALWAYS go straight to Production Release\033[0m')
+                    # Need to check the UoM for 'DOC' or 'N/A'
+
                 else:
                     sourcing = False
                     initial_release_sourcing.append(sourcing)
