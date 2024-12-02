@@ -51,7 +51,11 @@ def process_initial_release():
 
             # To get the UoM
             # Item guid
-            #item_attribute_url = 
+            item_attribute_url = f'{BASE_URL}/items/{item_guid}?includeEmptyAdditionalAttributes=true&responseview=true'
+            item_attribute_response = requests.get(item_attribute_url, headers=co_headers).json()
+            print(json.dumps(item_attribute_response, indent=2))
+            item_uom = result.get('results')['uom']
+            print(item_uom)
 
             # FOR SOURCING----------------------------------------------------
             # search the number in items world
