@@ -23,7 +23,7 @@ Here is the general process that the application undergoes:
         - Search the number in items world
         - Check if it is a document or not (use the document_prefixes.txt file to check prefixes)
       - Documents go from unreleased to production release
-      > Note from Trish: UoM "DOC or N/A" is indicated
+      > Note from Trish: UoM "DOC or N/A" is indicated &#x2611;
       - Always goes to rev A
       - Everything has checkmarks (does this need to change? Checkmarks are not accurate for initial release)
       > Any attributes that has a yellow dot requires a check box and will always include the files attribute

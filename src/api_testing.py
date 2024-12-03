@@ -8,6 +8,48 @@ import os
 url = f'{BASE_URL}/login'
 login_headers = {'Content-Type':'application/json'}
 
+def get_unit_of_measure(item_guid):
+    item_attribute_url = f'{BASE_URL}/items/{item_guid}?includeEmptyAdditionalAttributes=true&responseview=true'
+    item_attribute_response = requests.get(item_attribute_url, headers=co_headers).json()
+    item_uom = item_attribute_response.get('uom')
+    return item_uom
+
+def get_sourcing(item_guid, item_number, lifecycle_phase):
+    # NOTE: THAT ALL 'DOCUMENT' TYPES WILL NOT REQUIRE SOURCING
+    item_url = f'{BASE_URL}/items/{item_guid}/sourcing'
+    item_response = requests.get(item_url, headers=co_headers).json()
+    #print(json.dumps(item_response, indent=2))
+    sourcing_count = item_response.get('count')
+
+    is_document = False
+    sourcing = False
+
+    if sourcing_count == 0:      
+        # Check the prefixes file and see if this item is a document or not
+        with open('document_prefixes.txt', 'r') as file:
+            prefixes = [line.strip() for line in file]
+
+        for prefix in prefixes:
+            if item_number.startswith(prefix):
+                is_document = True
+                # If it's a document, we need to make sure that it's going straight to production release
+                break # No need to check the rest of the prefixes if it turns out it's a document
+
+        if is_document:
+            sourcing = True
+            if lifecycle_phase != 'Production Release':
+                print('\033[91mInitial release documents must ALWAYS go straight to Production Release\033[0m')
+            return sourcing, is_document
+
+        else:
+            sourcing = False
+            return sourcing, is_document
+
+    else:
+        sourcing = True
+        return sourcing, is_document
+        # Maybe we want to fetch the information for the sourcing?
+
 def process_initial_release():
     print('\n\033[34m--Initial Release has been called--\033[0m')
     # Documents go from unreleased -> production release      CHECK
@@ -26,6 +68,7 @@ def process_initial_release():
     is_document_list = []
 
     revisions = []
+    units_of_measure = []
 
     primary_status_list = []
     primary_file_formats = []
@@ -49,59 +92,14 @@ def process_initial_release():
 
             revisions.append(revision)
 
-            # To get the UoM
-            # Item guid
-            item_attribute_url = f'{BASE_URL}/items/{item_guid}?includeEmptyAdditionalAttributes=true&responseview=true'
-            item_attribute_response = requests.get(item_attribute_url, headers=co_headers).json()
-            print(json.dumps(item_attribute_response, indent=2))
-            item_uom = result.get('results')['uom']
-            print(item_uom)
+            # UNIT OF MEASURE
+            units_of_measure.append(get_unit_of_measure(item_guid))
 
-            # FOR SOURCING----------------------------------------------------
-            # search the number in items world
-            # NOTE: THAT ALL 'DOCUMENT' TYPES WILL NOT REQUIRE SOURCING
-            item_url = f'{BASE_URL}/items/{item_guid}/sourcing'
-            item_response = requests.get(item_url, headers=co_headers).json()
-            #print(json.dumps(item_response, indent=2))
-            sourcing_count = item_response.get('count')
+            # SOURCING
+            sourcing_results, document_results = get_sourcing(item_guid, item_number, lifecycle_phase)
+            initial_release_sourcing.append(sourcing_results)
+            is_document_list.append(document_results)
 
-            is_document = False
-            sourcing = False
-
-            if sourcing_count == 0:
-                # We need to check if it is a document type or not
-                # Document type does not need sourcing, other types do not
-                
-                # Check the prefixes file and see if this item is a document or not
-                with open('document_prefixes.txt', 'r') as file:
-                    prefixes = [line.strip() for line in file]
-
-                for prefix in prefixes:
-                    if item_number.startswith(prefix):
-                        is_document = True
-                        is_document_list.append(is_document)
-                        # If it's a document, we need to make sure that it's going straight to production release
-                        break # No need to check the rest of the prefixes if it turns out it's a document
-
-                if is_document:
-                    sourcing = True
-                    initial_release_sourcing.append(sourcing)
-                    if lifecycle_phase != 'Production Release':
-                        print('\033[91mInitial release documents must ALWAYS go straight to Production Release\033[0m')
-                    # Need to check the UoM for 'DOC' or 'N/A'
-
-                else:
-                    sourcing = False
-                    initial_release_sourcing.append(sourcing)
-                    is_document_list.append(is_document)
-
-            else:
-                sourcing = True
-                initial_release_sourcing.append(sourcing)
-                is_document_list.append(is_document) # This is only here to ensure that the is_document_list and the other lists line up, if sourcing is there, it does not matter if it is a document or not
-                # Maybe we want to fetch the information for the sourcing?
-                        
-            #----------------------------------------------------------------
             # Everything must be checkmarked-----------------------------------
             specs_check = result.get('specsView')['includedInThisChange']
             bom_check = result.get('bomView')['includedInThisChange']
@@ -147,6 +145,7 @@ def process_initial_release():
         primary_file_format = primary_file_formats[i]
         primary_status = primary_status_list[i]
         revision = revisions[i]
+        unit_of_measure = units_of_measure[i]
 
         print(f'\t- {item}')
         print(f'\t\t\033[96mSourcing status:\033[0m')
@@ -171,9 +170,12 @@ def process_initial_release():
             print(f'\t\t\t\033[91mItem does not have a primary file')
 
         print(f'\t\t\033[96mRevision:\033[0m \n\t\t\t{revision}')
-
         if revision != 'A':
             print(f'\t\t\t033[92mInitial Release should always be rev A033[0m')
+
+        print(f'\t\t\033[96mUnit of Measure:\033[0m \n\t\t\t{unit_of_measure}')
+        if unit_of_measure != 'DOC':
+            print(f'\t\t\t033[92mUnit of measure is not set to "DOC"033[0m')
 
     print('\033[33mItems that are NOT believed to be initial release: \033[0m')
     for item in not_initial_release_numbers:
