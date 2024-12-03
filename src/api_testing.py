@@ -50,13 +50,35 @@ def get_sourcing(item_guid, item_number, lifecycle_phase):
         return sourcing, is_document
         # Maybe we want to fetch the information for the sourcing?
 
+def get_item_files(item_guid, item_number):
+    # 2D array for files:
+    # file_name, file_format, primary_status
+    list_of_files = []
+
+    item_url = f'{BASE_URL}/items/{item_guid}/files'
+    item_response = requests.get(item_url, headers=co_headers).json()
+
+    item_files_count = item_response.get('count')
+    if item_files_count == 0:
+        print(f'\033[91mThere are no files associated with {item_number}\033[0m')
+        return list_of_files
+    else:
+        # We need to make sure that there is a primary file
+        files_list = item_response.get('results', [])
+        for file in files_list:
+            file_info = []
+            file_name = file.get('file')['name']
+            file_format = file.get('file')['format']
+            primary_status = file.get('primary')
+
+            file_info.extend([file_name, file_format, primary_status])
+            list_of_files.append(file_info)
+            #print(json.dumps(file_info, indent=2))
+        return list_of_files
+
 def process_initial_release():
     print('\n\033[34m--Initial Release has been called--\033[0m')
-    # Documents go from unreleased -> production release      CHECK
-    # Always goes to rev A                                    CHECK
-    # Everything has checkmarks                               CHECK
-    # pdf is the primary file (needs primary file)            CHECK
-    # if RETRAINED then quiz needs to be in implementation    
+    # NOTE if RETRAINED then quiz needs to be in implementation    
 
     # Get all items in Change
     items_url = f'{co_url}/items'
@@ -70,9 +92,7 @@ def process_initial_release():
     revisions = []
     units_of_measure = []
 
-    primary_status_list = []
-    primary_file_formats = []
-    primary_file_names = []
+    list_of_files = []
 
     not_initial_release_numbers = []
     initial_release_checklist = []
@@ -108,32 +128,10 @@ def process_initial_release():
             item_check_stats = [specs_check, bom_check, sourcing_check, files_check]
             initial_release_checklist.append(item_check_stats)
             #--------------------------------------------------------------
-            #-----------PDF must be the primary file----------------------
-            item_url = f'{BASE_URL}/items/{item_guid}/files'
-            item_response = requests.get(item_url, headers=co_headers).json()
-            #print(json.dumps(item_response, indent=2))
-
-            item_files_count = item_response.get('count')
-            if item_files_count == 0:
-                print(f'\033[91mThere are no files associated with {item_number}\033[0m')
-            else:
-                # We need to make sure that there is a primary file
-                files_list = item_response.get('results', [])
-                has_primary = False
-                for file in files_list:
-                    primary_status = file.get('primary')
-                    file_name = file.get('file')['name']
-                    if primary_status:
-                        has_primary = True
-                        format_type = file.get('file')['format']
-                        primary_file_formats.append(format_type)
-                        primary_status_list.append(has_primary)
-                        primary_file_names.append(file_name)
-                        break
-                if not has_primary:
-                    primary_status_list.append(has_primary)
-                    primary_file_names.append('')
-            #-------------------------------------------------
+            
+            # FILES
+            list_of_files.append(get_item_files(item_guid, item_number))
+            #print(list_of_files)
         else:
             not_initial_release_numbers.append(result.get('newItemRevision')['number'])
 
@@ -141,9 +139,9 @@ def process_initial_release():
     for i, item in enumerate(initial_release_numbers):
         sourcing = initial_release_sourcing[i]
         is_document = is_document_list[i]
-        primary_file_name = primary_file_names[i]
-        primary_file_format = primary_file_formats[i]
-        primary_status = primary_status_list[i]
+
+        item_files = list_of_files[i]
+
         revision = revisions[i]
         unit_of_measure = units_of_measure[i]
 
@@ -159,14 +157,23 @@ def process_initial_release():
         if not is_document and not sourcing:
             print(f'\t\t\t\033[91mThis item is missing sourcing\033[0m')
 
-        print(f'\t\t\033[96mFile Status:\033[0m')
+        print(f'\t\t\033[96mFile List:\033[0m')
+        has_primary = False
 
-        if primary_status:
-            print(f'\t\t\t\033[92mItem has a primary file\033[0m')
-            print(f'\t\t\t\tPrimary file name: {primary_file_name}')
-            if primary_file_format != 'pdf':
-                print(f'\t\t\t\t\033[91mPrimary file is not a pdf\033[0m')
-        else:
+        print(item_files)
+        for file in item_files:
+            file_name = file[0]
+            file_format = file[1]
+            primary_status = file[2]
+
+            if primary_status:
+                print(f'\t\t\t\033[92mItem has a primary file\033[0m')
+                print(f'\t\t\t\tPrimary file name: {file_name}')
+                has_primary = True
+                if file_format != 'pdf':
+                    print(f'\t\t\t\t\033[91mPrimary file is not a pdf\033[0m')
+            
+        if not has_primary:
             print(f'\t\t\t\033[91mItem does not have a primary file')
 
         print(f'\t\t\033[96mRevision:\033[0m \n\t\t\t{revision}')
