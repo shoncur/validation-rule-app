@@ -76,15 +76,47 @@ class HttpRequestApp(QMainWindow):
         spinner.setObjectName(f"spinner_{index}")
         h_layout.addWidget(spinner)
 
-        # Add to status layout
+        # Toggle button to show/hide details
+        toggle_button = QPushButton("Show Details")
+        toggle_button.setObjectName(f"toggle_button_{index}")
+        toggle_button.setEnabled(False)  # Initially disable the button while loading
+        toggle_button.clicked.connect(lambda: self.toggle_details(index, toggle_button))
+        h_layout.addWidget(toggle_button)
+
+        # Container for request row
         container = QWidget()
         container.setLayout(h_layout)
         self.status_layout.addWidget(container)
 
+        # Hidden details container for request
+        details_container = QWidget()
+        details_layout = QVBoxLayout()
+        details_label = QLabel("Details about the request...")  # Placeholder for request details
+        details_layout.addWidget(details_label)
+        details_container.setLayout(details_layout)
+        details_container.setObjectName(f"details_{index}")
+        details_container.setVisible(False)  # Initially hidden
+        self.status_layout.addWidget(details_container)
+
     def complete_request(self, index, success):
+        # Update spinner to show success or failure
         spinner = self.findChild(QLabel, f"spinner_{index}")
         if spinner:
             spinner.setText("✔️" if success else "❌")
+
+        # Enable the toggle button once the request is complete
+        toggle_button = self.findChild(QPushButton, f"toggle_button_{index}")
+        if toggle_button:
+            toggle_button.setEnabled(True)
+
+    def toggle_details(self, index, toggle_button):
+        details_container = self.findChild(QWidget, f"details_{index}")
+        if details_container:
+            details_visible = details_container.isVisible()
+            details_container.setVisible(not details_visible)  # Toggle visibility
+            
+            # Update button text
+            toggle_button.setText("Hide Details" if not details_visible else "Show Details")
 
     def clear_status_layout(self):
         # Remove all children widgets from status layout
