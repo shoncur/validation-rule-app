@@ -68,7 +68,7 @@ class COApp(QMainWindow):
         self.submit_button.setEnabled(False)
 
         # Simulating HTTP requests
-        request_count = 3  # Number of HTTP requests to simulate
+        request_count = 6  # Number of HTTP requests to simulate
         self.active_requests = request_count
         for i in range(request_count):
             QTimer.singleShot(i * 1000, lambda index=i: self.add_request_ui(index))
