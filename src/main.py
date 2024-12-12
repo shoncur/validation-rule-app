@@ -7,7 +7,7 @@ import sys
 class COApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("CO Validator")
+        self.setWindowTitle("HTTP Request Validator")
         self.setFixedSize(500, 400)
 
         # Main layout
@@ -38,8 +38,10 @@ class COApp(QMainWindow):
         # Scrollable area for HTTP request statuses
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.status_widget = QWidget()
         self.status_layout = QVBoxLayout()
+        self.status_layout.setSpacing(10)  # Add spacing between request items
         self.status_widget.setLayout(self.status_layout)
         self.scroll_area.setWidget(self.status_widget)
         self.layout.addWidget(self.scroll_area)
@@ -75,6 +77,7 @@ class COApp(QMainWindow):
     def add_request_ui(self, index):
         # Horizontal layout for each request
         h_layout = QHBoxLayout()
+        h_layout.setContentsMargins(5, 5, 5, 5)
 
         # Label for request number
         label = QLabel(f"Request {index + 1}:")
@@ -94,11 +97,13 @@ class COApp(QMainWindow):
 
         # Container for request row
         container = QWidget()
+        container.setFixedHeight(40)  # Fixed height for each request
         container.setLayout(h_layout)
         self.status_layout.addWidget(container)
 
         # Hidden details container for request
         details_container = QWidget()
+        details_container.setFixedHeight(60)  # Fixed height for details
         details_layout = QVBoxLayout()
         details_label = QLabel("Details loading...")  # Placeholder for loading details
         details_label.setObjectName(f"details_label_{index}")
