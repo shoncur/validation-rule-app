@@ -1,4 +1,6 @@
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QLineEdit, QPushButton, QLabel, QHBoxLayout, QWidget, QScrollArea)
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QVBoxLayout, QLineEdit, QPushButton, QLabel, QHBoxLayout, QWidget, QScrollArea
+)
 from PyQt6.QtCore import Qt, QTimer
 import sys
 
@@ -47,6 +49,9 @@ class HttpRequestApp(QMainWindow):
         self.info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.layout.addWidget(self.info_label)
 
+        # Track active requests
+        self.active_requests = 0
+
     def handle_submit(self):
         digits = self.input_field.text()
         if len(digits) != 6 or not digits.isdigit():
@@ -57,13 +62,17 @@ class HttpRequestApp(QMainWindow):
         self.clear_status_layout()  # Clear previous results
         self.input_field.clear()  # Optionally clear input field for next input
 
+        # Disable the submit button during processing
+        self.submit_button.setEnabled(False)
+
         # Simulating HTTP requests
         request_count = 3  # Number of HTTP requests to simulate
+        self.active_requests = request_count
         for i in range(request_count):
-            QTimer.singleShot(i * 1000, lambda index=i: self.add_loading_indicator(index))
+            QTimer.singleShot(i * 1000, lambda index=i: self.add_request_ui(index))
             QTimer.singleShot((i + 1) * 1000, lambda index=i: self.complete_request(index, success=(index % 2 == 0)))
 
-    def add_loading_indicator(self, index):
+    def add_request_ui(self, index):
         # Horizontal layout for each request
         h_layout = QHBoxLayout()
 
@@ -91,7 +100,8 @@ class HttpRequestApp(QMainWindow):
         # Hidden details container for request
         details_container = QWidget()
         details_layout = QVBoxLayout()
-        details_label = QLabel("Details about the request...")  # Placeholder for request details
+        details_label = QLabel("Details loading...")  # Placeholder for loading details
+        details_label.setObjectName(f"details_label_{index}")
         details_layout.addWidget(details_label)
         details_container.setLayout(details_layout)
         details_container.setObjectName(f"details_{index}")
@@ -104,17 +114,27 @@ class HttpRequestApp(QMainWindow):
         if spinner:
             spinner.setText("✔️" if success else "❌")
 
+        # Update details with actual information
+        details_label = self.findChild(QLabel, f"details_label_{index}")
+        if details_label:
+            details_label.setText(f"Request {index + 1} completed successfully: {success}")
+
         # Enable the toggle button once the request is complete
         toggle_button = self.findChild(QPushButton, f"toggle_button_{index}")
         if toggle_button:
             toggle_button.setEnabled(True)
+
+        # Decrease active request count and re-enable submit button if all requests are complete
+        self.active_requests -= 1
+        if self.active_requests == 0:
+            self.submit_button.setEnabled(True)
 
     def toggle_details(self, index, toggle_button):
         details_container = self.findChild(QWidget, f"details_{index}")
         if details_container:
             details_visible = details_container.isVisible()
             details_container.setVisible(not details_visible)  # Toggle visibility
-            
+
             # Update button text
             toggle_button.setText("Hide Details" if not details_visible else "Show Details")
 
