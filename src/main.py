@@ -1,8 +1,75 @@
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QLineEdit, QPushButton, QLabel, QHBoxLayout, QWidget, QScrollArea
+    QApplication, QMainWindow, QVBoxLayout, QLineEdit, QPushButton, QLabel, QHBoxLayout, QWidget, QScrollArea, QDialog, QCheckBox
 )
 from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QIcon
+from get_path import get_resource_path
+from base import BASE_URL
 import sys
+import requests
+
+class LoginPopup(QDialog):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
+
+        self.setWindowTitle("Login")
+        self.email_label = QLabel("Email:", self)
+        self.email_entry = QLineEdit(self)
+        self.password_label = QLabel("Password:", self)
+        self.password_entry = QLineEdit(self)
+        self.password_entry.setEchoMode(QLineEdit.EchoMode.Password)
+        self.show_password_checkbox = QCheckBox("Show Password", self)
+        self.show_password_checkbox.stateChanged.connect(self.toggle_password_visibility)
+        
+        self.login_button = QPushButton("Login", self)
+        self.login_button.clicked.connect(self.login)
+
+        self.error_label = QLabel(self)
+        self.error_label.setStyleSheet("color: red")
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.email_label)
+        layout.addWidget(self.email_entry)
+        layout.addWidget(self.password_label)
+        layout.addWidget(self.password_entry)
+        layout.addWidget(self.show_password_checkbox)
+        layout.addWidget(self.login_button)
+        layout.addWidget(self.error_label)
+
+        #self.setStyleSheet("QCheckBox { color: white; } QWidget { background-color: #2E2E2E; } QLineEdit { background-color: white; color: black;}")
+
+        self.setLayout(layout)
+
+    def toggle_password_visibility(self):
+        if self.show_password_checkbox.isChecked():
+            self.password_entry.setEchoMode(QLineEdit.EchoMode.Normal)
+        else:
+            self.password_entry.setEchoMode(QLineEdit.EchoMode.Password)
+
+    def login(self):
+        email = self.email_entry.text()
+        password = self.password_entry.text()
+        
+        url = f'{BASE_URL}/login'
+        headers = {'Content-Type':'application/json'}
+
+        try:
+            data = {
+                'email': f'{email}',
+                'password': f'{password}'
+            }
+            response = requests.post(url, headers=headers, json=data)
+            response.raise_for_status()
+            global arena_session_id
+            arena_session_id = response.json()['arenaSessionId']
+        except Exception as error:
+            print(f'Invalid entry: {error}')
+            self.error_label.setText('Enter a valid email/password')
+            return
+
+        self.accept()
 
 class COApp(QMainWindow):
     def __init__(self):
@@ -152,6 +219,13 @@ class COApp(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    logo_path = get_resource_path("resources/galvanize_logo.png")
+    app.setWindowIcon(QIcon(logo_path))
+
+    login_popup = LoginPopup()
+    if login_popup.exec() != QDialog.DialogCode.Accepted:
+        sys.exit(0)
+
     window = COApp()
     window.show()
     sys.exit(app.exec())
